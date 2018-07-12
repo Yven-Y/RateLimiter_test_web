@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:p="http://www.springframework.org/schema/p"
+	xmlns:aop="http://www.springframework.org/schema/aop" xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:tx="http://www.springframework.org/schema/tx"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans
+        http://www.springframework.org/schema/beans/spring-beans.xsd
+        http://www.springframework.org/schema/context
+        http://www.springframework.org/schema/context/spring-context-4.3.xsd
+        http://www.springframework.org/schema/aop
+        http://www.springframework.org/schema/aop/spring-aop-4.3.xsd
+        http://www.springframework.org/schema/tx
+        http://www.springframework.org/schema/tx/spring-tx.xsd">
+        
+    <context:property-placeholder location="classpath:jdbcConfig.properties"/>
+    
+	<!-- 扫描包，应用注解 -->
+	<context:component-scan base-package="com.yven.dao" />
+	<context:component-scan base-package="com.yven.service" />
+
+	<!--定义一个jdbc数据源，创建一个驱动管理数据源的bean -->
+	<!-- <bean id="jdbcDataSource"
+		class="org.springframework.jdbc.datasource.DriverManagerDataSource">
+		<property name="driverClassName" value="com.mysql.jdbc.Driver" />
+		<property name="url" value="jdbc:mysql://localhost:3306/druid" />
+		<property name="username" value="root" />
+		<property name="password" value="123456" />
+	</bean> -->
+	<!-- 配置数据源 -->
+    <bean id="dataSource" class="com.alibaba.druid.pool.DruidDataSource" 
+	  init-method="init" destroy-method="close"> 
+		  <property name="driverClassName" value="${jdbc.driver}" /> 
+		  <property name="url" value="${jdbc.url}" />  
+		  <property name="username" value="${jdbc.username}" /> 
+		  <property name="password" value="${jdbc.password}" /> 
+		  
+		  <!-- 配置初始化大小、最小、最大 --> 
+		  <property name="initialSize" value="${initialSize}" /> 
+		  <property name="minIdle" value="${minIdle}" /> 
+		  <property name="maxActive" value="${maxActive}" />
+		
+		  <!-- 配置获取连接等待超时的时间 --> 
+		  <!-- <property name="maxWait" value="10000" /> -->
+		  <property name="maxWait" value="${maxWait}" />
+		
+		  <!-- 配置间隔多久才进行一次检测，检测需要关闭的空闲连接，单位是毫秒 --> 
+		  <property name="timeBetweenEvictionRunsMillis" value="${timeBetweenEvictionRunsMillis}" />
+		
+		  <!-- 配置一个连接在池中最小生存的时间，单位是毫秒 --> 
+		  <property name="minEvictableIdleTimeMillis" value="${minEvictableIdleTimeMillis}" />
+		
+		  <property name="testWhileIdle" value="${testWhileIdle}" />
+		
+		  <!-- 这里建议配置为TRUE，防止取到的连接不可用 --> 
+		  <property name="testOnBorrow" value="${testOnBorrow}" /> 
+		  <property name="testOnReturn" value="${testOnReturn}" />
+		
+		  <!-- 打开PSCache，并且指定每个连接上PSCache的大小 --> 
+		  <property name="poolPreparedStatements" value="${poolPreparedStatements}" /> 
+		  <property name="maxPoolPreparedStatementPerConnectionSize" value="${maxPoolPreparedStatementPerConnectionSize}" />
+		  <!-- 验证连接有效与否的SQL，不同的数据配置不同 --> 
+		  <property name="validationQuery" value="${validationQuery} " /> 
+		  <property name="filters" value="${filters}" /> 
+	</bean>
+
+	<!-- 定义jdbc模板Bean -->
+	<bean id="jdbcTemplate" class="org.springframework.jdbc.core.JdbcTemplate"
+		p:dataSource-ref="dataSource" />
+
+	<!-- 配置事务管理器 -->
+	<bean id="transactionManager"
+		class="org.springframework.jdbc.datasource.DataSourceTransactionManager"
+		p:dataSource-ref="dataSource" />
+
+	<!-- 通过AOP配置事务增强，让service包下所有Bean的所有方法拥有事务 -->
+	<aop:config proxy-target-class="true">
+		<aop:pointcut expression="execution(* com.yven.service..*(..))"
+			id="serviceMethod" />
+		<aop:advisor advice-ref="txAdvice" pointcut-ref="serviceMethod" />
+	</aop:config>
+	<tx:advice id="txAdvice" transaction-manager="transactionManager">
+		<tx:attributes>
+			<tx:method name="*"></tx:method>
+		</tx:attributes>
+	</tx:advice>
+
+	<aop:aspectj-autoproxy proxy-target-class="true"></aop:aspectj-autoproxy>
+</beans>
